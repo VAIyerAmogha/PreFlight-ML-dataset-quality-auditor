@@ -6,6 +6,11 @@ PIP := $(VENV)/bin/pip
 PYTEST := $(VENV)/bin/python -m pytest
 UVICORN := $(VENV)/bin/uvicorn
 
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
+
 install:
 	$(PYTHON) -m venv $(VENV)
 	$(PIP) install -r requirements.txt

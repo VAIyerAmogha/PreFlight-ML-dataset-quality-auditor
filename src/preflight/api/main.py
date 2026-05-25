@@ -22,8 +22,6 @@ from preflight.export.preprocessing_applicator import PreprocessingApplicator
 from preflight.execution.job_runner import JobRunner
 from preflight.ingestion.dataset_ingester import DatasetIngestError, DatasetIngester
 from preflight.reporting.schemas import AuditReportSchema, JobStatusSchema, UploadResponseSchema
-from preflight.simulation.schemas import SimulationResult
-from preflight.simulation.simulation_engine import SimulationEngine
 from preflight.suggestions.schemas import Suggestion
 from preflight.suggestions.suggestion_engine import SuggestionEngine
 from preflight.storage.job_store import JobNotFoundError, JobStore
@@ -44,7 +42,6 @@ def create_app(
     store = JobStore(db_path)
     runner = JobRunner(job_store=store, max_workers=max_workers)
     suggestion_engine = SuggestionEngine()
-    simulation_engine = SimulationEngine()
     applicator = PreprocessingApplicator()
     export_builder = ExportBuilder()
     upload_path = Path(upload_dir)
@@ -59,7 +56,6 @@ def create_app(
     app.state.job_store = store
     app.state.job_runner = runner
     app.state.suggestion_engine = suggestion_engine
-    app.state.simulation_engine = simulation_engine
     app.state.preprocessing_applicator = applicator
     app.state.export_builder = export_builder
     app.state.upload_dir = upload_path
@@ -144,23 +140,6 @@ def create_app(
             raise HTTPException(status_code=202, detail="Report is not ready yet")
         return await run_in_threadpool(app.state.suggestion_engine.generate, report)
 
-    @app.post("/jobs/{job_id}/simulate", response_model=SimulationResult)
-    async def simulate_job(
-        job_id: str,
-        request: AcceptedSuggestionsRequest = Body(...),
-    ) -> SimulationResult:
-        report = _completed_report_or_202(store, job_id)
-        job = store.get_job(job_id)
-        source_df = await run_in_threadpool(app.state.ingester.ingest, job.stored_path)
-        suggestions = await run_in_threadpool(app.state.suggestion_engine.generate, report)
-        accepted = _accepted_suggestions(suggestions, request.accepted_suggestion_ids)
-        transformed_df, _ = await run_in_threadpool(app.state.preprocessing_applicator.apply, source_df, accepted)
-
-        target_column = request.target_column or _pick_target_column(source_df)
-        _ensure_target_column(source_df, transformed_df, target_column)
-        simulation_source_df = _align_source_for_simulation(source_df, transformed_df)
-        return await run_in_threadpool(app.state.simulation_engine.run, simulation_source_df, transformed_df, target_column)
-
     @app.post("/jobs/{job_id}/export")
     async def export_job_bundle(
         job_id: str,
@@ -226,12 +205,6 @@ def _ensure_target_column(source_df, transformed_df, target_column: str) -> None
     if target_column not in source_df.columns:
         raise ValueError(f"Target column not found: {target_column}")
     transformed_df[target_column] = source_df[target_column].reindex(transformed_df.index).to_numpy()
-
-
-def _align_source_for_simulation(source_df, transformed_df):
-    if len(source_df.index) == len(transformed_df.index):
-        return source_df
-    return source_df.reindex(transformed_df.index).reset_index(drop=True)
 
 
 async def _save_upload(file: UploadFile, destination: Path) -> None:

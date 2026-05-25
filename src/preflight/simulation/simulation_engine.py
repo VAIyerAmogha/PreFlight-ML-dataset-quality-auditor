@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+import re
 from math import sqrt
 
 import numpy as np
@@ -76,6 +78,7 @@ class SimulationEngine:
     def _prepare_data(self, df: pd.DataFrame, target_column: str, task_type: str) -> tuple[pd.DataFrame, pd.Series]:
         features = df.drop(columns=[target_column])
         features = pd.get_dummies(features, dummy_na=True)
+        features = self._sanitize_feature_names(features)
 
         target = df[target_column]
         if task_type == "classification":
@@ -84,6 +87,22 @@ class SimulationEngine:
             target = pd.to_numeric(target, errors="coerce")
         mask = target.notna()
         return features.loc[mask].reset_index(drop=True), target.loc[mask].reset_index(drop=True)
+
+    def _sanitize_feature_names(self, features: pd.DataFrame) -> pd.DataFrame:
+        sanitized_columns: list[str] = []
+        for column in features.columns:
+            raw_name = str(column)
+            safe_name = re.sub(r"[^0-9A-Za-z_]+", "_", raw_name).strip("_")
+            if not safe_name:
+                safe_name = "feature"
+            if safe_name[0].isdigit():
+                safe_name = f"f_{safe_name}"
+            suffix = hashlib.sha1(raw_name.encode("utf-8")).hexdigest()[:8]
+            sanitized_columns.append(f"{safe_name}__{suffix}")
+
+        sanitized = features.copy()
+        sanitized.columns = sanitized_columns
+        return sanitized
 
     def _align_features(self, before_x: pd.DataFrame, after_x: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         all_columns = sorted(set(before_x.columns).union(after_x.columns))

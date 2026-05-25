@@ -64,13 +64,6 @@ export async function getSuggestions(jobId) {
   return getJson(`/jobs/${jobId}/suggestions`);
 }
 
-export async function runSimulation(jobId, acceptedIds, targetColumn) {
-  return postJson(`/jobs/${jobId}/simulate`, {
-    accepted_ids: acceptedIds,
-    ...(targetColumn ? { target_column: targetColumn } : {})
-  });
-}
-
 export async function exportJob(jobId, acceptedIds, targetColumn) {
   return postJson(`/jobs/${jobId}/export`, {
     accepted_ids: acceptedIds,
@@ -100,5 +93,19 @@ export function loadJobContext(jobId) {
     return JSON.parse(window.sessionStorage.getItem(`preflight:${jobId}:context`) || "{}");
   } catch {
     return {};
+  }
+}
+
+export function saveLatestReport(report) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem("preflight:latest-report", JSON.stringify(report));
+}
+
+export function loadLatestReport() {
+  if (typeof window === "undefined") return null;
+  try {
+    return JSON.parse(window.localStorage.getItem("preflight:latest-report") || "null");
+  } catch {
+    return null;
   }
 }

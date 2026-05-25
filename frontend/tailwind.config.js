@@ -4,15 +4,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: "#152018",
-        fern: "#2f6f4e",
-        mint: "#d8f3dc",
-        amberline: "#d1901f",
-        coral: "#c94f4f",
-        panel: "#fbfbf7"
+        ink: "#f4f7ff",
+        fern: "#4f8cff",
+        mint: "#dbeafe",
+        amberline: "#7aa7ff",
+        coral: "#fb7185",
+        panel: "#07111f"
       },
       boxShadow: {
-        soft: "0 14px 40px rgba(21, 32, 24, 0.09)"
+        soft: "0 18px 60px rgba(3, 8, 20, 0.45)",
+        glow: "0 0 0 1px rgba(79, 140, 255, 0.18), 0 18px 70px rgba(79, 140, 255, 0.16)"
       }
     }
   },

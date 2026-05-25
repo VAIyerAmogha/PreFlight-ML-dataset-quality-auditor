@@ -9,7 +9,7 @@ The backend is FastAPI, SQLite, pandas, scikit-learn, and LightGBM. The frontend
 - Python 3.10+
 - Node.js 18+
 - npm
-- Optional: Ollama for local AI-generated suggestions. If Ollama is not running, PreFlightML falls back to deterministic rule-based suggestions.
+- Optional: Groq or Ollama for AI-generated suggestions. If no LLM is configured, PreFlightML falls back to deterministic rule-based suggestions.
 
 ## Backend Setup
 
@@ -81,7 +81,32 @@ As an alternative to Make, this starts backend and frontend together:
 
 Stop both processes with `Ctrl+C`.
 
-## Optional Ollama Setup
+## Optional LLM Setup
+
+### Groq
+
+Create a local `.env` file and add your key:
+
+```bash
+cp .env.example .env
+```
+
+```env
+PREFLIGHT_LLM_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.1-8b-instant
+```
+
+Load the variables before starting the backend:
+
+```bash
+set -a
+source .env
+set +a
+make backend
+```
+
+### Ollama
 
 Install and start Ollama, then pull a local model:
 
@@ -90,7 +115,7 @@ ollama pull mistral
 ollama serve
 ```
 
-PreFlightML uses `mistral` by default. Set `PREFLIGHT_OLLAMA_MODEL` if you want to use a different local model. If Ollama is unavailable, suggestions still work through the built-in fallback engine.
+PreFlightML uses `mistral` by default for Ollama. Set `PREFLIGHT_OLLAMA_MODEL` if you want to use a different local model. If the configured LLM is unavailable, suggestions still work through the built-in fallback engine.
 
 ## Configuration
 
@@ -105,6 +130,10 @@ Supported values:
 - `PREFLIGHT_UPLOAD_DIR`: where uploaded CSVs are stored.
 - `PREFLIGHT_DB_PATH`: SQLite database path.
 - `PREFLIGHT_MAX_FILE_SIZE_MB`: maximum CSV upload size.
+- `PREFLIGHT_LLM_PROVIDER`: `auto`, `groq`, `ollama`, or `none`.
+- `GROQ_API_KEY`: Groq API key for hosted suggestions.
+- `GROQ_MODEL`: Groq model name.
+- `GROQ_BASE_URL`: Groq OpenAI-compatible API base URL.
 - `PREFLIGHT_OLLAMA_MODEL`: local Ollama model name.
 - `PREFLIGHT_OLLAMA_BASE_URL`: Ollama server URL.
 
@@ -116,7 +145,7 @@ Supported values:
 4. Upload a CSV such as Iris or Titanic.
 5. Wait for the audit to complete.
 6. Review the report score and findings.
-7. Review suggestions, accept or reject fixes, and run simulation.
+7. Review suggestions, accept or reject fixes, and export the cleaned bundle.
 8. Export the ZIP bundle containing:
    - `cleaned_dataset.csv`
    - `preprocessing_pipeline.py`

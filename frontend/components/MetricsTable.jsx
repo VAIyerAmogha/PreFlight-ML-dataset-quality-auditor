@@ -2,13 +2,13 @@ export default function MetricsTable({ result }) {
   const metrics = Object.keys(result?.before_metrics || {});
 
   if (!metrics.length) {
-    return <div className="rounded-md border border-dashed border-slate-300 p-6 text-sm text-slate-500">No simulation metrics available.</div>;
+    return <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-6 text-sm text-slate-400">No comparison metrics available.</div>;
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04] backdrop-blur">
       <table className="w-full min-w-[620px] text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+        <thead className="bg-white/[0.03] text-xs uppercase tracking-[0.18em] text-slate-400">
           <tr>
             <th className="px-4 py-3">Metric</th>
             <th className="px-4 py-3">Before</th>
@@ -17,7 +17,7 @@ export default function MetricsTable({ result }) {
             <th className="px-4 py-3">p-value</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-white/6">
           {metrics.map((metric) => {
             const delta = Number(result.deltas?.[metric] || 0);
             const pValue = result.p_values?.[metric];
@@ -30,19 +30,19 @@ export default function MetricsTable({ result }) {
             return (
               <tr key={metric}>
                 <td className="px-4 py-3 font-semibold text-ink">{metric.replaceAll("_", " ")}</td>
-                <td className="px-4 py-3 text-slate-700">
+                <td className="px-4 py-3 text-slate-300">
                   {beforeMean.toFixed(3)}
-                  {beforeStd ? <span className="ml-1 text-xs text-slate-400">± {beforeStd}</span> : null}
+                  {beforeStd ? <span className="ml-1 text-xs text-slate-500">± {beforeStd}</span> : null}
                 </td>
-                <td className="px-4 py-3 text-slate-700">
+                <td className="px-4 py-3 text-slate-300">
                   {afterMean.toFixed(3)}
-                  {afterStd ? <span className="ml-1 text-xs text-slate-400">± {afterStd}</span> : null}
+                  {afterStd ? <span className="ml-1 text-xs text-slate-500">± {afterStd}</span> : null}
                 </td>
-                <td className={`px-4 py-3 font-bold ${delta >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+                <td className={`px-4 py-3 font-bold ${delta >= 0 ? "text-blue-300" : "text-rose-300"}`}>
                   {delta >= 0 ? "+" : ""}
                   {delta.toFixed(3)}
                 </td>
-                <td className={`px-4 py-3 font-semibold ${Number(pValue) < 0.05 ? "text-fern" : "text-slate-500"}`}>
+                <td className={`px-4 py-3 font-semibold ${Number(pValue) < 0.05 ? "text-blue-200" : "text-slate-400"}`}>
                   {pValue == null ? "n/a" : Number(pValue).toFixed(3)}
                   {Number(pValue) < 0.05 ? " significant" : ""}
                 </td>
