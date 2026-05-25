@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class Suggestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    id: str = ""
     title: str
     severity: str
     affected_columns: list[str] = Field(default_factory=list)

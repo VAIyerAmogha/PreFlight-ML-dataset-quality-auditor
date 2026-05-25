@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import time
+import io
+import zipfile
 
 from fastapi.testclient import TestClient
 
@@ -152,3 +154,62 @@ def test_suggestions_endpoint_returns_validated_recommendations(tmp_path: Path) 
     suggestions = response.json()
     assert suggestions
     assert all(suggestion["code"].strip() for suggestion in suggestions)
+
+
+def test_simulation_endpoint_returns_result(tmp_path: Path) -> None:
+    client = _build_client(tmp_path)
+    csv_bytes = b"target,feature_a,feature_b\n0,1,2\n1,2,3\n0,1,1\n1,3,4\n0,0,1\n1,4,5\n"
+
+    upload = client.post(
+        "/upload",
+        files={"file": ("simulate.csv", csv_bytes, "text/csv")},
+    )
+    assert upload.status_code == 200
+    job_id = upload.json()["job_id"]
+
+    _wait_for_status(client, job_id, {"COMPLETED"})
+
+    suggestions = client.get(f"/jobs/{job_id}/suggestions").json()
+    accepted_ids = [suggestions[0]["id"]] if suggestions else []
+
+    response = client.post(
+        f"/jobs/{job_id}/simulate",
+        json={"accepted_suggestion_ids": accepted_ids, "target_column": "target"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["task_type"] in {"classification", "regression"}
+    assert payload["before_metrics"]
+    assert payload["after_metrics"]
+    assert payload["p_values"]
+
+
+def test_export_endpoint_returns_valid_zip(tmp_path: Path) -> None:
+    client = _build_client(tmp_path)
+    csv_bytes = b"target,feature_a,feature_b\n0,1,2\n1,2,3\n0,1,1\n1,3,4\n0,0,1\n1,4,5\n"
+
+    upload = client.post(
+        "/upload",
+        files={"file": ("export.csv", csv_bytes, "text/csv")},
+    )
+    assert upload.status_code == 200
+    job_id = upload.json()["job_id"]
+
+    _wait_for_status(client, job_id, {"COMPLETED"})
+
+    suggestions = client.get(f"/jobs/{job_id}/suggestions").json()
+    accepted_ids = [suggestions[0]["id"]] if suggestions else []
+
+    response = client.post(
+        f"/jobs/{job_id}/export",
+        json={"accepted_suggestion_ids": accepted_ids, "target_column": "target"},
+    )
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/zip")
+
+    archive = zipfile.ZipFile(io.BytesIO(response.content))
+    assert set(archive.namelist()) == {
+        "cleaned_dataset.csv",
+        "preprocessing_pipeline.py",
+        "audit_report.json",
+    }

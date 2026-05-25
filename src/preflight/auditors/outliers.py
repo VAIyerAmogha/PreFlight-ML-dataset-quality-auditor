@@ -83,7 +83,7 @@ class OutliersAuditor(BaseAuditor):
         if len(numeric.columns) < 2 or len(numeric.index) < 4:
             return []
 
-        if IsolationForest is not None:
+        if IsolationForest is not None and len(numeric.index) >= 20:
             model = IsolationForest(contamination=0.1, random_state=42)
             labels = model.fit_predict(numeric.fillna(numeric.median(numeric_only=True)))
             return [int(index) for index, label in enumerate(labels) if label == -1]

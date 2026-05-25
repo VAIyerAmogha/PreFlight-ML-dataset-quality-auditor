@@ -1,60 +1,129 @@
-# PreFlight
+# PreFlightML
 
-PreFlight is a local-first AI-powered dataset quality auditor. Phase 1 sets up the repository structure, local Python environment, and the shared interfaces used by all auditors.
+PreFlightML is a local-first dataset quality auditor for machine learning projects. Upload a CSV, run seven data-quality auditors, review a scored report, accept suggested fixes, simulate model impact, and export a cleaned dataset bundle.
 
-## Repository layout
+The backend is FastAPI, SQLite, pandas, scikit-learn, and LightGBM. The frontend is a Next.js dashboard that talks to the backend through local `/api/*` rewrites, so the whole demo runs on your machine with two terminal windows.
 
-```text
-PreFlight/
-├── requirements.txt
-├── README.md
-├── src/
-│   └── preflight/
-│       ├── api/
-│       │   └── main.py
-│       ├── core/
-│       │   ├── base.py
-│       │   └── models.py
-│       ├── ingestion/
-│       │   └── dataset_ingester.py
-│       └── profiling/
-│           └── column_profiler.py
-└── tests/
-    ├── test_column_profiler.py
-    └── test_dataset_ingester.py
-```
+## Prerequisites
 
-## Local setup
+- Python 3.10+
+- Node.js 18+
+- npm
+- Optional: Ollama for local AI-generated suggestions. If Ollama is not running, PreFlightML falls back to deterministic rule-based suggestions.
 
-1. Create and activate a virtual environment.
+## Backend Setup
+
+From the project root:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn preflight.api.main:app --app-dir src --host 127.0.0.1 --port 8000 --reload
 ```
 
-2. Install dependencies.
+Verify the API:
 
 ```bash
-pip install -r requirements.txt
+curl http://localhost:8000/health
 ```
 
-3. Run the test suite.
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+## Frontend Setup
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+The frontend proxies `/api/*` to `http://localhost:8000`, so keep the backend running while using the dashboard.
+
+## Run Tests
+
+From the project root with the virtualenv active:
 
 ```bash
 python -m pytest
 ```
 
-4. Start the local API.
+## Make Commands
+
+You can use `make` instead of typing the longer commands:
 
 ```bash
-uvicorn src.preflight.api.main:app --reload
+make install    # install Python and Node dependencies
+make backend    # start FastAPI on localhost:8000
+make frontend   # start Next.js on localhost:3000
+make test       # run the full pytest suite
 ```
 
-The app ships with a simple health endpoint for local verification.
+## One-Command Local Run
+
+As an alternative to Make, this starts backend and frontend together:
+
+```bash
+./run.sh
+```
+
+Stop both processes with `Ctrl+C`.
+
+## Optional Ollama Setup
+
+Install and start Ollama, then pull a local model:
+
+```bash
+ollama pull mistral
+ollama serve
+```
+
+PreFlightML uses `mistral` by default. Set `PREFLIGHT_OLLAMA_MODEL` if you want to use a different local model. If Ollama is unavailable, suggestions still work through the built-in fallback engine.
+
+## Configuration
+
+Copy `.env.example` if you want to document or export local settings:
+
+```bash
+cp .env.example .env
+```
+
+Supported values:
+
+- `PREFLIGHT_UPLOAD_DIR`: where uploaded CSVs are stored.
+- `PREFLIGHT_DB_PATH`: SQLite database path.
+- `PREFLIGHT_MAX_FILE_SIZE_MB`: maximum CSV upload size.
+- `PREFLIGHT_OLLAMA_MODEL`: local Ollama model name.
+- `PREFLIGHT_OLLAMA_BASE_URL`: Ollama server URL.
+
+## Demo Flow
+
+1. Start the backend: `make backend`
+2. Start the frontend: `make frontend`
+3. Open `http://localhost:3000`
+4. Upload a CSV such as Iris or Titanic.
+5. Wait for the audit to complete.
+6. Review the report score and findings.
+7. Review suggestions, accept or reject fixes, and run simulation.
+8. Export the ZIP bundle containing:
+   - `cleaned_dataset.csv`
+   - `preprocessing_pipeline.py`
+   - `audit_report.json`
 
 ## Notes
 
-- Everything runs locally with Python, FastAPI, SQLite, and pytest.
-- The ingestion layer is intentionally strict about file size and CSV validity so bad inputs fail fast.
-- The profiling layer is independent from auditors so each auditor can be tested in isolation.
+- `src/preflight/auditors/column_health.py` is a legacy prototype auditor kept for reference and is not used by the production `JobRunner`.
+- Runtime data is written to `data/` and `uploads/` by default.
+- No Docker is required.

@@ -1,7 +1,15 @@
 .venv/
+.env
+.env.local
+.env.*.local
+
 __pycache__/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
+htmlcov/
+
 *.pyc
 *.pyo
 *.pyd
@@ -10,3 +18,24 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# Runtime data
+data/
+uploads/
+exports/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.vercel/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

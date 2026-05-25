@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 import httpx
@@ -7,8 +8,8 @@ import httpx
 
 @dataclass(slots=True)
 class OllamaClient:
-    model: str = "mistral"
-    base_url: str = "http://localhost:11434"
+    model: str = os.getenv("PREFLIGHT_OLLAMA_MODEL", "mistral")
+    base_url: str = os.getenv("PREFLIGHT_OLLAMA_BASE_URL", "http://localhost:11434")
     timeout_seconds: float = 3.0
 
     def generate(self, prompt: str) -> str:

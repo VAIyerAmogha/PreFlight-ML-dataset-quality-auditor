@@ -12,6 +12,8 @@ from preflight.profiling.column_profiler import ColumnProfiler
 
 @dataclass(slots=True)
 class ColumnHealthAuditor(BaseAuditor):
+    """Legacy prototype auditor retained for reference; not used by JobRunner."""
+
     name: str = "column_health"
 
     def run(self, df: pd.DataFrame, config: dict[str, Any]) -> AuditResult:

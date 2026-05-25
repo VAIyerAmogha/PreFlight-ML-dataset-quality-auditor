@@ -28,9 +28,10 @@ class SuggestionEngine:
             suggestions = self.fallback_engine.generate(report)
         valid_suggestions = self.validator.filter_valid(suggestions, self._suggestion_columns(report))
         if valid_suggestions:
-            return valid_suggestions
+            return self._assign_ids(valid_suggestions)
 
-        return self.validator.filter_valid(self.fallback_engine.generate(report), self._suggestion_columns(report))
+        fallback_valid = self.validator.filter_valid(self.fallback_engine.generate(report), self._suggestion_columns(report))
+        return self._assign_ids(fallback_valid)
 
     def _try_ollama(self, prompt: str, report: AuditReportSchema) -> list[Suggestion]:
         try:
@@ -56,3 +57,11 @@ class SuggestionEngine:
         for finding in report.findings:
             columns.extend(finding.affected_columns)
         return list(dict.fromkeys(columns))
+
+    def _assign_ids(self, suggestions: list[Suggestion]) -> list[Suggestion]:
+        assigned: list[Suggestion] = []
+        for index, suggestion in enumerate(suggestions, start=1):
+            payload = suggestion.model_dump()
+            payload["id"] = payload.get("id") or f"suggestion_{index}"
+            assigned.append(Suggestion.model_validate(payload))
+        return assigned
